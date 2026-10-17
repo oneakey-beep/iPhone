@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>iPhone-Design 2007–2025</title>
+<style>
+:root{--bg:#14161b;--ink:#eceef2;--dim:#8a8f9b;--faint:#3a3e48;--screen:#23262e;--body:#1b1d23;--accent:#9dbcff;--hole:#000;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#eceef2;--ink:#14161b;--dim:#666b78;--faint:#c3c7d1;--screen:#d5d9e2;--body:#f7f8fa;--accent:#2f5fd0;--hole:#14161b}}
+:root[data-theme="light"]{--bg:#eceef2;--ink:#14161b;--dim:#666b78;--faint:#c3c7d1;--screen:#d5d9e2;--body:#f7f8fa;--accent:#2f5fd0;--hole:#14161b}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html{height:100%;overflow:hidden;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;display:flex;flex-direction:column;padding:18px 22px 14px;-webkit-text-size-adjust:100%;user-select:none;-webkit-user-select:none}
+header{color:var(--dim);font-size:11px;display:flex;justify-content:space-between}
+#stage{flex:1;min-height:0;position:relative;touch-action:none;cursor:grab}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#info{flex:none;height:132px;overflow:hidden;padding:0 0 8px}
+#year{font-size:34px;font-weight:200;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
+#name{font-size:13px;font-weight:500;letter-spacing:.01em;margin-top:9px}
+#note{font-size:12px;color:var(--dim);margin-top:3px;line-height:1.4;max-width:34ch;min-height:2.8em}
+#dim{font-size:10.5px;color:var(--dim);margin-top:6px;font-variant-numeric:tabular-nums}
+nav{position:relative;display:flex;border-top:1px solid var(--faint);margin-top:6px;touch-action:none}
+nav span{flex:1;text-align:center;color:var(--dim);font-size:10.5px;padding:13px 0 10px;font-variant-numeric:tabular-nums}
+nav span.on{color:var(--ink)}
+#thumb{position:absolute;top:-1px;left:0;height:2px;width:12.5%;background:var(--accent)}
+</style>
+</head>
+<body>
+<header><span>iPhone, Vorderseite im Maßstab</span><span>Wischen zum Blättern</span></header>
+<div id="stage"><canvas id="cv" role="img" aria-label="Silhouette des iPhone-Modells"></canvas></div>
+<div id="info" aria-live="polite">
+<div id="year"></div><div id="name"></div><div id="note"></div><div id="dim"></div>
+</div>
+<nav id="nav"><div id="thumb"></div></nav>
+<script>
+var M=[
+{y:2007,n:"iPhone",t:"3,5″, ein Home-Button, gewölbte Rückseite.",w:61,h:115.5,r:12,bt:17,bb:18,bs:4,home:5,cw:10,ch:1.2,co:-9,cr:.6,edge:1},
+{y:2010,n:"iPhone 4",t:"Flach, Glas vorn und hinten, Retina-Display.",w:58.6,h:115.2,r:9,bt:14,bb:16,bs:4,home:4.5,cw:10,ch:1.2,co:-8,cr:.6,edge:0},
+{y:2012,n:"iPhone 5",t:"Erstmals 4″: länger statt breiter.",w:58.6,h:123.8,r:10,bt:17,bb:17,bs:4,home:4.5,cw:10,ch:1.2,co:-9,cr:.6,edge:.2},
+{y:2014,n:"iPhone 6",t:"Komplett abgerundet, jetzt mit 4,7″.",w:67,h:138.1,r:14,bt:17,bb:17,bs:5,home:4.5,cw:12,ch:1.2,co:-9,cr:.6,edge:1},
+{y:2017,n:"iPhone X",t:"Home-Button weg, OLED bis zum Rand, Notch.",w:70.9,h:143.6,r:16,bt:3.5,bb:3.5,bs:3,home:0,cw:31,ch:9,co:-3,cr:3.5,edge:.5},
+{y:2020,n:"iPhone 12",t:"Flache Kanten kehren zurück.",w:71.5,h:146.7,r:15,bt:3.5,bb:3.5,bs:3.2,home:0,cw:30,ch:8,co:-3,cr:3.2,edge:0},
+{y:2022,n:"iPhone 14 Pro",t:"Dynamic Island ersetzt die Notch.",w:71.5,h:147.5,r:15,bt:3,bb:3,bs:3,home:0,cw:21,ch:6,co:2.5,cr:3,edge:0},
+{y:2025,n:"iPhone 17 Pro",t:"Schmalste Ränder, 6,3″-Display.",w:71.9,h:150,r:16,bt:2.8,bb:2.8,bs:2.8,home:0,cw:20,ch:5.8,co:2.3,cr:2.9,edge:.3}
+];
+var K=["w","h","r","bt","bb","bs","home","cw","ch","co","cr","edge"],N=M.length;
+var $=function(i){return document.getElementById(i)};
+var cv=$("cv"),c=cv.getContext("2d"),cx=50,cy=85,W=0,H=0,C={},cur={};
+var pos=0,shown=-1,raf=null,drag=null;
+var reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+M.forEach(function(m){var s=document.createElement("span");s.textContent=m.y;$("nav").appendChild(s)});
+var labels=$("nav").querySelectorAll("span");
+var TG={};K.forEach(function(k){var d=[],m=[],i;for(i=0;i<N-1;i++)d[i]=M[i+1][k]-M[i][k];m[0]=d[0];m[N-1]=d[N-2];for(i=1;i<N-1;i++)m[i]=d[i-1]*d[i]<=0?0:(d[i-1]+d[i])/2;for(i=0;i<N-1;i++){if(d[i]===0){m[i]=m[i+1]=0}else{var p=m[i]/d[i],q=m[i+1]/d[i],s=p*p+q*q;if(s>9){var u=3/Math.sqrt(s);m[i]=u*p*d[i];m[i+1]=u*q*d[i]}}}TG[k]=m});
+
+function colors(){var s=getComputedStyle(document.documentElement);["faint","ink","dim","screen","body","hole","accent"].forEach(function(k){C[k]=s.getPropertyValue("--"+k).trim()})}
+function size(){var r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1;W=r.width;H=r.height;cv.width=Math.round(W*d);cv.height=Math.round(H*d);colors();render()}
+function rr(x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+function draw(p){
+ if(!W)return;
+ var d=window.devicePixelRatio||1,s=Math.min(W/116,H/192)*d,x=cx-p.w/2,y=cy-p.h/2;
+ c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,cv.width,cv.height);
+ var tx=(cv.width-100*s)/2,ty=(cv.height-170*s)/2-5*s;c.setTransform(s,0,0,s,tx,ty);
+ var x0=-tx/s,x1=(cv.width-tx)/s,y0=-ty/s,y1=(cv.height-ty)/s,gx,gy,ga=1.5*d/s,gb=2.6*d/s;
+ c.fillStyle=C.faint;c.beginPath();
+ for(gx=Math.ceil((x0-cx)/5);cx+gx*5<=x1;gx++)for(gy=Math.ceil((y0-cy)/5);cy+gy*5<=y1;gy++)if(gx%5||gy%5)c.rect(cx+gx*5-ga/2,cy+gy*5-ga/2,ga,ga);
+ c.fill();c.fillStyle=C.dim;c.globalAlpha=.6;c.beginPath();
+ for(gx=Math.ceil((x0-cx)/25)*5;cx+gx*5<=x1;gx+=5)for(gy=Math.ceil((y0-cy)/25)*5;cy+gy*5<=y1;gy+=5)c.rect(cx+gx*5-gb/2,cy+gy*5-gb/2,gb,gb);
+ c.fill();c.globalAlpha=1;
+ c.lineWidth=.25;c.strokeStyle=C.faint;
+ M.forEach(function(m){rr(cx-m.w/2,cy-m.h/2,m.w,m.h,m.r);c.stroke()});
+ rr(x,y,p.w,p.h,p.r);c.fillStyle=C.body;c.fill();c.lineWidth=.6;c.strokeStyle=C.ink;c.stroke();
+ var ei=1.1;c.globalAlpha=Math.max(0,Math.min(1,p.edge*.7));rr(x+ei,y+ei,p.w-2*ei,p.h-2*ei,p.r-ei);c.lineWidth=.25;c.stroke();c.globalAlpha=1;
+ var sy=y+p.bt;rr(x+p.bs,sy,p.w-2*p.bs,p.h-p.bt-p.bb,Math.max(p.r-p.bs,1.5));c.fillStyle=C.screen;c.fill();
+ rr(cx-p.cw/2,sy+p.co,p.cw,p.ch,Math.min(p.cr,p.ch/2));c.fillStyle=C.hole;c.fill();
+ if(p.home>.05){c.globalAlpha=Math.min(p.home,1);c.beginPath();c.arc(cx,y+p.h-p.bb/2,p.home,0,6.2832);c.strokeStyle=C.dim;c.lineWidth=.5;c.stroke();c.globalAlpha=1}
+ ruler(0,x,y+p.h,p.w,s,d,tx,ty);ruler(1,x+p.w,y,p.h,s,d,tx,ty);
+}
+function ruler(vert,ex,ey,len,s,d,tx,ty){
+ var k=s/d,X=(tx+ex*s)/d,Y=(ty+ey*s)/d,L=len*k,G=18,i,q,mm=len.toFixed(1).replace(".",","),bx=vert?X+G:X,by=vert?Y:Y+G;
+ c.setTransform(d,0,0,d,0,0);
+ c.strokeStyle=C.dim;c.lineWidth=.6;c.beginPath();
+ if(vert){c.moveTo(bx,by);c.lineTo(bx,by+L)}else{c.moveTo(bx,by);c.lineTo(bx+L,by)}
+ for(i=0;i<=len;i+=10){q=i*k;if(vert){c.moveTo(bx,by+q);c.lineTo(bx+4,by+q)}else{c.moveTo(bx+q,by);c.lineTo(bx+q,by+4)}}
+ c.stroke();
+ c.strokeStyle=C.accent;c.fillStyle=C.accent;c.lineWidth=1.2;c.beginPath();
+ if(vert){c.moveTo(bx-3,by+L);c.lineTo(bx+7,by+L)}else{c.moveTo(bx+L,by-3);c.lineTo(bx+L,by+7)}
+ c.stroke();
+ c.font="500 10px \"Helvetica Neue\",Helvetica,Arial,sans-serif";c.textBaseline="middle";
+ if(vert){c.textAlign="left";c.fillText(mm,bx+9,by+L)}else{c.textAlign="right";c.fillText(mm,bx+L,by+16)}
+}
+function render(){
+ var i=Math.min(Math.floor(pos),N-2),t=pos-i,a=M[i],b=M[i+1],t2=t*t,t3=t2*t,h00=2*t3-3*t2+1,h10=t3-2*t2+t,h01=-2*t3+3*t2,h11=t3-t2;
+ K.forEach(function(k){cur[k]=h00*a[k]+h10*TG[k][i]+h01*b[k]+h11*TG[k][i+1]});
+ cur.ch=Math.max(cur.ch,.4);cur.cw=Math.max(cur.cw,0);cur.home=Math.max(cur.home,0);cur.edge=Math.max(0,Math.min(1,cur.edge));
+ draw(cur);
+ $("year").textContent=Math.round(a.y+(b.y-a.y)*t);
+ $("dim").textContent=cur.w.toFixed(1).replace(".",",")+" × "+cur.h.toFixed(1).replace(".",",")+" mm";
+ $("thumb").style.left=(pos/N*100)+"%";
+ var n=Math.round(pos);
+ if(n!==shown){
+  shown=n;var m=M[n];
+  $("name").textContent=m.n;$("note").textContent=m.t;
+  for(var j=0;j<N;j++)labels[j].className=j===n?"on":"";
+ }
+}
+function clamp(v){return Math.max(0,Math.min(N-1,v))}
+var tpos=0;
+function loop(){
+ pos+=(tpos-pos)*(reduce?1:.2);
+ if(Math.abs(tpos-pos)<.0005){pos=tpos;render();raf=null;return}
+ render();raf=requestAnimationFrame(loop);
+}
+function setT(v){tpos=v;if(!raf)raf=requestAnimationFrame(loop)}
+var settle=setT;
+/* Wischen auf der Bühne */
+var st=$("stage");
+st.addEventListener("pointerdown",function(e){
+ st.setPointerCapture(e.pointerId);
+ drag={x:e.clientX,p:tpos,lp:tpos,lt:e.timeStamp,v:0};
+});
+st.addEventListener("pointermove",function(e){
+ if(!drag)return;
+ var np=clamp(drag.p-(e.clientX-drag.x)/(W*.45)),dt=e.timeStamp-drag.lt;
+ if(dt>0){drag.v=.7*drag.v+.3*((np-drag.lp)/dt)}
+ drag.lp=np;drag.lt=e.timeStamp;setT(np);
+});
+function endDrag(){if(!drag)return;var v=drag.v;drag=null;settle(clamp(Math.round(tpos+v*220)))}
+st.addEventListener("pointerup",endDrag);
+st.addEventListener("pointercancel",endDrag);
+/* Regler unten */
+var nv=$("nav"),ndrag=false;
+function navPos(e){var r=nv.getBoundingClientRect();setT(clamp((e.clientX-r.left)/r.width*N-.5))}
+nv.addEventListener("pointerdown",function(e){nv.setPointerCapture(e.pointerId);ndrag=true;navPos(e)});
+nv.addEventListener("pointermove",function(e){if(ndrag)navPos(e)});
+function endNav(){if(!ndrag)return;ndrag=false;settle(Math.round(tpos))}
+nv.addEventListener("pointerup",endNav);
+nv.addEventListener("pointercancel",endNav);
+/* Tastatur */
+addEventListener("keydown",function(e){
+ if(e.key==="ArrowRight")settle(clamp(Math.round(tpos)+1));
+ if(e.key==="ArrowLeft")settle(clamp(Math.round(tpos)-1));
+});
+addEventListener("resize",size);if(window.ResizeObserver)new ResizeObserver(size).observe($("stage"));
+size();
+</script>
+</body>
+</html>
